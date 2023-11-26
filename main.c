@@ -18,7 +18,6 @@
  */
 int main(int argc, char* argv[]) {
     if(argc != 3) return EXIT_FAILURE;
-
     FILE *input, *output;
     uint32_t x0, x1, x2, x3;
     unsigned char buffer[16];
@@ -55,10 +54,6 @@ int main(int argc, char* argv[]) {
 
 
 
-
-
-
-
         //add your algorithm here
 
 
@@ -76,5 +71,5 @@ int main(int argc, char* argv[]) {
     }
     fclose(input);
     fclose(output);
-    return 0;
+    return EXIT_SUCCESS;
 }
