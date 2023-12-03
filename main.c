@@ -1,44 +1,129 @@
+/**
+ * 2023
+ * 9R2by
+ * @htwsaar
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <x86intrin.h>
 
 #define endian_conversion(x) __asm__ volatile ("bswap %0" : "+r" (x))
 
-/**
- * File input reading with padding defined in RFC5652
- * as: trailing to end:
- * 1024 bytes = 1kibibyte
- * input = fopen("253B", "rb");
- * output = fopen("253B.bin", "wb");
- * e.g. ./main 253B 253B.bin
- * @param argc input arguments count
- * @param argv input shall define in and output filename
- * @return
- */
-int main(int argc, char* argv[]) {
-    if(argc != 3) return EXIT_FAILURE;
-    FILE *input, *output;
-    uint32_t x0, x1, x2, x3;
-    unsigned char buffer[16];
-    unsigned char b0[4], b1[4], b2[4], b3[4];
-    uint8_t bytesRead;
+#define MFENCE _mm_mfence();
+#define LFENCE _mm_lfence();
 
-    input = fopen(argv[1], "rb");
+
+static uint8_t read_file_remove_padding(char *input_p, char *output_p) {
+    uint64_t fileSize;
+    FILE *input, *output;
+    uint32_t a0, a1, a2, a3;
+    uint8_t buffer[16], b0[4], b1[4], b2[4], b3[4];
+    input = fopen(input_p, "rb");
     if (input == NULL) {
         perror("Error opening file");
         return EXIT_FAILURE;
     }
-    output = fopen(argv[2], "wb");
+    output = fopen(output_p, "wb");
+    if (output == NULL) {
+        perror("Error opening file");
+        return EXIT_FAILURE;
+    }
+    fseek(input, 0, SEEK_END);
+    fileSize = ftell(input);
+    fseek(input, 0, SEEK_SET);
+
+    printf("Filesize: %zu\n", fileSize);
+
+    while (fread(buffer, 1, 16, input) > 0) {
+        memcpy(b0, buffer, 4);
+        memcpy(b1, buffer + 4, 4);
+        memcpy(b2, buffer + 8, 4);
+        memcpy(b3, buffer + 12, 4);
+
+        a0 = (b0[0] << 24) | (b0[1] << 16) | (b0[2] << 8) | b0[3];
+        a1 = (b1[0] << 24) | (b1[1] << 16) | (b1[2] << 8) | b1[3];
+        a2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
+        a3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];
+
+        //add your algorithm here
+
+
+
+        b0[0] = (a0 >> 24) & 0xFF;
+        b0[1] = (a0 >> 16) & 0xFF;
+        b0[2] = (a0 >> 8) & 0xFF;
+        b0[3] = a0 & 0xFF;
+
+        b1[0] = (a1 >> 24) & 0xFF;
+        b1[1] = (a1 >> 16) & 0xFF;
+        b1[2] = (a1 >> 8) & 0xFF;
+        b1[3] = a1 & 0xFF;
+
+        b2[0] = (a2 >> 24) & 0xFF;
+        b2[1] = (a2 >> 16) & 0xFF;
+        b2[2] = (a2 >> 8) & 0xFF;
+        b2[3] = a2 & 0xFF;
+
+        b3[0] = (a3 >> 24) & 0xFF;
+        b3[1] = (a3 >> 16) & 0xFF;
+        b3[2] = (a3 >> 8) & 0xFF;
+        b3[3] = a3 & 0xFF;
+
+
+        uint8_t last_byte = a3 & 0x0000000F;
+        if (last_byte == 0x1) {
+            endian_conversion(a0);
+            endian_conversion(a1);
+            endian_conversion(a2);
+            endian_conversion(a3);
+            fwrite(buffer, sizeof(buffer) - 0x1, 1, output);
+        } else {
+            uint8_t arr[16];
+            memcpy(arr + 0, buffer, 4);
+            memcpy(arr + 4, buffer + 4, 4);
+            memcpy(arr + 8, buffer + 8, 4);
+            memcpy(arr + 12, buffer + 12, 4);
+            fwrite(buffer, 16 - last_byte, 1, output);
+        }
+    }
+
+
+    fclose(input);
+    fclose(output);
+
+    printf("Output filename:  %s\n", output_p);
+    return EXIT_SUCCESS;
+}
+
+
+static uint8_t read_file_add_padding(char *input_p, char *output_p) {
+    FILE *input, *output;
+    uint64_t fileSize;
+    uint32_t a0, a1, a2, a3;
+    uint8_t buffer[16], b0[4], b1[4], b2[4], b3[4], bytesRead;
+    input = fopen(input_p, "rb");
+    if (input == NULL) {
+        perror("Error opening file");
+        return EXIT_FAILURE;
+    }
+    output = fopen(output_p, "wb");
     if (output == NULL) {
         perror("Error opening file");
         return EXIT_FAILURE;
     }
 
-    while ((bytesRead = fread(buffer, 1, sizeof(buffer), input)) > 0) {
+    fseek(input, 0, SEEK_END);
+    fileSize = ftell(input);
+    fseek(input, 0, SEEK_SET);
+
+    printf("Filesize: %zu\n", fileSize);
+
+    while ((bytesRead = fread(buffer, 1, 15, input)) > 0) {
         if (bytesRead < sizeof(buffer)) {
-            uint8_t missing_bytes = ((uint8_t) sizeof(buffer)) - ((uint8_t) bytesRead);
-            for(size_t i = bytesRead; i < sizeof(buffer); i++){
+            uint8_t missing_bytes = ((uint8_t) sizeof(buffer)) - bytesRead;
+            for (size_t i = bytesRead; i < sizeof(buffer); i++) {
                 buffer[i] = missing_bytes;
             }
         }
@@ -47,29 +132,88 @@ int main(int argc, char* argv[]) {
         memcpy(b2, buffer + 8, 4);
         memcpy(b3, buffer + 12, 4);
 
-        x0 = (b0[0] << 24)  | (b0[1] << 16) | (b0[2] << 8) | b0[3];
-        x1 = (b1[0] << 24)  | (b1[1] << 16) | (b1[2] << 8) | b1[3];
-        x2 = (b2[0] << 24)  | (b2[1] << 16) | (b2[2] << 8) | b2[3];
-        x3 = (b3[0] << 24)  | (b3[1] << 16) | (b3[2] << 8) | b3[3];
-
-
+        a0 = (b0[0] << 24) | (b0[1] << 16) | (b0[2] << 8) | b0[3];
+        a1 = (b1[0] << 24) | (b1[1] << 16) | (b1[2] << 8) | b1[3];
+        a2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
+        a3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];
 
         //add your algorithm here
 
+        endian_conversion(a0);
+        endian_conversion(a1);
+        endian_conversion(a2);
+        endian_conversion(a3);
 
-
-
-        endian_conversion(x0);
-        endian_conversion(x1);
-        endian_conversion(x2);
-        endian_conversion(x3);
-
-        fwrite(&x0, sizeof(uint32_t), 1, output);
-        fwrite(&x1, sizeof(uint32_t), 1, output);
-        fwrite(&x2, sizeof(uint32_t), 1, output);
-        fwrite(&x3, sizeof(uint32_t), 1, output);
+        fwrite(&a0, sizeof(uint32_t), 1, output);
+        fwrite(&a1, sizeof(uint32_t), 1, output);
+        fwrite(&a2, sizeof(uint32_t), 1, output);
+        fwrite(&a3, sizeof(uint32_t), 1, output);
     }
+
     fclose(input);
     fclose(output);
+
+    printf("Output filename:  %s\n", output_p);
     return EXIT_SUCCESS;
+}
+
+
+/**
+ * File input reading with padding defined in RFC5652
+ * as: trailing to end:
+ * 1024 bytes = 1kibibyte
+ * e.g. ./main 253B 253B.out -a
+ * e.g. ./main 253B.out 253B.clean -r
+ * @param argc input arguments count
+ * @param argv input shall define in and output filename as well as the mode of operation
+ * @return
+ */
+int main(int argc, char *argv[]) {
+    if (argc != 4) return EXIT_FAILURE;
+    uint8_t mode = 0;
+    //-a -r
+
+    if (strcmp(argv[3], "-a") == 0) {
+        mode = 1;
+    } else if (strcmp(argv[3], "-r") == 0) {
+        mode = 2;
+    } else {
+        printf("Program input is not as needed.\n");
+        return EXIT_FAILURE;
+    }
+
+
+    uint64_t start, end;
+    uint32_t ui, ret = 0;
+
+    //clock_gettime(CLOCK_PROCESS_CPUTIME_ID)
+    //getrusage RUSAGE_SELF
+    //https://man7.org/linux/man-pages/man2/getrusage.2.html
+    //https://man7.org/linux/man-pages/man3/clock_gettime.3.html
+
+    MFENCE
+    start = __rdtscp(&ui);
+    LFENCE
+
+    switch (mode) {
+        case 1:
+            ret = read_file_add_padding(argv[1], argv[2]);
+            break;
+        case 2:
+            ret = read_file_remove_padding(argv[1], argv[2]);
+            break;
+        default:
+            break;
+    }
+
+    MFENCE
+    end = __rdtscp(&ui);
+    LFENCE
+    printf("Cycles: %llu, Returncode: %u\n", (end - start), ret);
+
+    if (ret != 0) {
+        return EXIT_FAILURE;
+    } else {
+        return EXIT_SUCCESS;
+    }
 }
