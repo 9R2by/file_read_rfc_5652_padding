@@ -186,9 +186,9 @@ int main(int argc, char *argv[]) {
     uint64_t start, end;
     uint32_t ui, ret = 0;
     struct timespec start_t, end_t, start_cpu, end_cpu, ts1, ts2;
-    clock_gettime(CLOCK_MONOTONIC, &start_t);
+ //   clock_gettime(CLOCK_MONOTONIC, &start_t);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_cpu);
-    timespec_get(&ts1, TIME_UTC);
+ //   timespec_get(&ts1, TIME_UTC);
 
     MFENCE
     start = __rdtscp(&ui);
@@ -205,24 +205,22 @@ int main(int argc, char *argv[]) {
             break;
     }
 
-    sleep(3);
-
     MFENCE
     end = __rdtscp(&ui);
     LFENCE
     printf("Cycles: %lu, Returncode: %u\n", (end - start), ret);
-    clock_gettime(CLOCK_MONOTONIC, &end_t);
+   // clock_gettime(CLOCK_MONOTONIC, &end_t);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_cpu);
-    timespec_get(&ts2, TIME_UTC);
+  //  timespec_get(&ts2, TIME_UTC);
 
 
-    //conversion from nano to microseconds
+    /*conversion from nano to microseconds
     printf("Time: %lu μs\n", end_t.tv_nsec / THOUSAND - start_t.tv_nsec / THOUSAND);
     printf("Time: %f s\n", (end_t.tv_sec - start_t.tv_sec) + (end_t.tv_nsec - start_t.tv_nsec)/1000000000.0);
     printf("Timespec: %ld s\n", ts2.tv_nsec / THOUSAND - ts1.tv_nsec/THOUSAND);
-    printf("Timespec: %f s\n", (ts2.tv_sec - ts1.tv_sec) + (ts2.tv_nsec - ts1.tv_nsec)/1000000000.0);
+    printf("Timespec: %f s\n", (ts2.tv_sec - ts1.tv_sec) + (ts2.tv_nsec - ts1.tv_nsec)/1000000000.0);*/
     printf("CPU Time: %lu μs\n", end_cpu.tv_nsec / THOUSAND - start_cpu.tv_nsec / THOUSAND);
-    printf("CPU Time: %f s\n", (end_cpu.tv_sec - start_cpu.tv_sec) + (end_cpu.tv_nsec - start_cpu.tv_nsec)/1000000000.0);
+   //printf("CPU Time: %f s\n", (end_cpu.tv_sec - start_cpu.tv_sec) + (end_cpu.tv_nsec - start_cpu.tv_nsec)/1000000000.0);
 
 
     if (ret != 0) {
