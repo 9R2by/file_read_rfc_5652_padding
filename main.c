@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <x86intrin.h>
+#include <time.h>
 
 #define endian_conversion(x) __asm__ volatile ("bswap %0" : "+r" (x))
 
@@ -184,12 +185,15 @@ int main(int argc, char *argv[]) {
 
 
     uint64_t start, end;
+    double million = 1e6, time_start, time_end,  time;
     uint32_t ui, ret = 0;
 
     //clock_gettime(CLOCK_PROCESS_CPUTIME_ID)
     //getrusage RUSAGE_SELF
     //https://man7.org/linux/man-pages/man2/getrusage.2.html
     //https://man7.org/linux/man-pages/man3/clock_gettime.3.html
+    struct timespec start_t, end_t;
+    timespec_get(&start_t, TIME_UTC);
 
     MFENCE
     start = __rdtscp(&ui);
@@ -210,6 +214,11 @@ int main(int argc, char *argv[]) {
     end = __rdtscp(&ui);
     LFENCE
     printf("Cycles: %llu, Returncode: %u\n", (end - start), ret);
+    timespec_get(&end_t, TIME_UTC);
+
+    time_start = (start_t.tv_nsec / million);
+    time_end = (end_t.tv_nsec / million);
+    printf("Time: %fms\n", time_end - time_start);
 
     if (ret != 0) {
         return EXIT_FAILURE;
