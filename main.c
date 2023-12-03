@@ -218,7 +218,7 @@ int main(int argc, char *argv[]) {
 
     time_start = (start_t.tv_nsec / million);
     time_end = (end_t.tv_nsec / million);
-    printf("Time: %fms\n", time_end - time_start);
+    printf("Time: %f ms\n", time_end - time_start);
 
     if (ret != 0) {
         return EXIT_FAILURE;
