@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #define THOUSAND 1000
+#define MILLION 1000000
 #define endian_conversion(x) __asm__ volatile ("bswap %0" : "+r" (x))
 
 #define MFENCE _mm_mfence();
@@ -77,17 +78,17 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p) {
 
         uint8_t last_byte = a3 & 0x0000000F;
         if (last_byte == 0x1) {
-            endian_conversion(a0);
+           /* endian_conversion(a0);
             endian_conversion(a1);
             endian_conversion(a2);
-            endian_conversion(a3);
+            endian_conversion(a3);*/
             fwrite(buffer, sizeof(buffer) - 0x1, 1, output);
         } else {
-            uint8_t arr[16];
+           /* uint8_t arr[16];
             memcpy(arr + 0, buffer, 4);
             memcpy(arr + 4, buffer + 4, 4);
             memcpy(arr + 8, buffer + 8, 4);
-            memcpy(arr + 12, buffer + 12, 4);
+            memcpy(arr + 12, buffer + 12, 4);*/
             fwrite(buffer, 16 - last_byte, 1, output);
         }
     }
@@ -142,15 +143,45 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p) {
 
         //add your algorithm here
 
-        endian_conversion(a0);
+
+
+        fwrite(buffer, sizeof(buffer), 1, output);
+
+   /*     endian_conversion(a0);
         endian_conversion(a1);
         endian_conversion(a2);
         endian_conversion(a3);
 
+        b0[0] = (a0 >> 24) & 0xFF;
+        b0[1] = (a0 >> 16) & 0xFF;
+        b0[2] = (a0 >> 8) & 0xFF;
+        b0[3] = a0 & 0xFF;
+
+        b1[0] = (a1 >> 24) & 0xFF;
+        b1[1] = (a1 >> 16) & 0xFF;
+        b1[2] = (a1 >> 8) & 0xFF;
+        b1[3] = a1 & 0xFF;
+
+        b2[0] = (a2 >> 24) & 0xFF;
+        b2[1] = (a2 >> 16) & 0xFF;
+        b2[2] = (a2 >> 8) & 0xFF;
+        b2[3] = a2 & 0xFF;
+
+        b3[0] = (a3 >> 24) & 0xFF;
+        b3[1] = (a3 >> 16) & 0xFF;
+        b3[2] = (a3 >> 8) & 0xFF;
+        b3[3] = a3 & 0xFF;
+
+        uint8_t arr[16];
+        memcpy(arr + 0, buffer, 4);
+        memcpy(arr + 4, buffer + 4, 4);
+        memcpy(arr + 8, buffer + 8, 4);
+        memcpy(arr + 12, buffer + 12, 4);
+
         fwrite(&a0, sizeof(uint32_t), 1, output);
         fwrite(&a1, sizeof(uint32_t), 1, output);
         fwrite(&a2, sizeof(uint32_t), 1, output);
-        fwrite(&a3, sizeof(uint32_t), 1, output);
+        fwrite(&a3, sizeof(uint32_t), 1, output);*/
     }
 
     fclose(input);
@@ -173,7 +204,7 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p) {
  */
 int main(int argc, char *argv[]) {
     if (argc != 4) return EXIT_FAILURE;
-    uint8_t mode = 0;
+    uint8_t mode;
     if (strcmp(argv[3], "-a") == 0) {
         mode = 1;
     } else if (strcmp(argv[3], "-r") == 0) {
@@ -186,9 +217,8 @@ int main(int argc, char *argv[]) {
     uint64_t start, end;
     uint32_t ui, ret = 0;
     struct timespec start_t, end_t, start_cpu, end_cpu, ts1, ts2;
- //   clock_gettime(CLOCK_MONOTONIC, &start_t);
+    clock_gettime(CLOCK_MONOTONIC, &start_t);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_cpu);
- //   timespec_get(&ts1, TIME_UTC);
 
     MFENCE
     start = __rdtscp(&ui);
@@ -209,18 +239,12 @@ int main(int argc, char *argv[]) {
     end = __rdtscp(&ui);
     LFENCE
     printf("Cycles: %lu, Returncode: %u\n", (end - start), ret);
-   // clock_gettime(CLOCK_MONOTONIC, &end_t);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_cpu);
-  //  timespec_get(&ts2, TIME_UTC);
-
-
-    /*conversion from nano to microseconds
-    printf("Time: %lu μs\n", end_t.tv_nsec / THOUSAND - start_t.tv_nsec / THOUSAND);
-    printf("Time: %f s\n", (end_t.tv_sec - start_t.tv_sec) + (end_t.tv_nsec - start_t.tv_nsec)/1000000000.0);
-    printf("Timespec: %ld s\n", ts2.tv_nsec / THOUSAND - ts1.tv_nsec/THOUSAND);
-    printf("Timespec: %f s\n", (ts2.tv_sec - ts1.tv_sec) + (ts2.tv_nsec - ts1.tv_nsec)/1000000000.0);*/
-    printf("CPU Time: %lu μs\n", end_cpu.tv_nsec / THOUSAND - start_cpu.tv_nsec / THOUSAND);
-   //printf("CPU Time: %f s\n", (end_cpu.tv_sec - start_cpu.tv_sec) + (end_cpu.tv_nsec - start_cpu.tv_nsec)/1000000000.0);
+    clock_gettime(CLOCK_MONOTONIC, &end_t);
+    //conversion from nano to microseconds/milli
+    printf("Time: %f s\n", (end_t.tv_sec - start_t.tv_sec) + (end_t.tv_nsec - start_t.tv_nsec) / 1000000000.0);
+    printf("CPU Time: %f s\n",
+           (end_cpu.tv_sec - start_cpu.tv_sec) + (end_cpu.tv_nsec - start_cpu.tv_nsec) / 1000000000.0);
 
 
     if (ret != 0) {

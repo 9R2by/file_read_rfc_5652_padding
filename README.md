@@ -2,9 +2,9 @@
 
 Takes as input the input and output filenames:     
 Padding is applied:     
-./padding 33 33.ap -a  
+./padding 1GB 1GB.ap -a  
 Padding is removed:   
-./padding 33.ap 33.np -r  
+./padding 1GB.ap 1GB.np  -r  
 
 sha256sum(33) == sha256sum(33.np)   
 If the hashes are not equal, something went wrong.
