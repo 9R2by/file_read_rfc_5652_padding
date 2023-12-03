@@ -9,7 +9,9 @@
 #include <stdint.h>
 #include <x86intrin.h>
 #include <time.h>
+#include <unistd.h>
 
+#define THOUSAND 1000
 #define endian_conversion(x) __asm__ volatile ("bswap %0" : "+r" (x))
 
 #define MFENCE _mm_mfence();
@@ -172,8 +174,6 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p) {
 int main(int argc, char *argv[]) {
     if (argc != 4) return EXIT_FAILURE;
     uint8_t mode = 0;
-    //-a -r
-
     if (strcmp(argv[3], "-a") == 0) {
         mode = 1;
     } else if (strcmp(argv[3], "-r") == 0) {
@@ -183,17 +183,12 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-
     uint64_t start, end;
-    double million = 1e6, time_start, time_end,  time;
     uint32_t ui, ret = 0;
-
-    //clock_gettime(CLOCK_PROCESS_CPUTIME_ID)
-    //getrusage RUSAGE_SELF
-    //https://man7.org/linux/man-pages/man2/getrusage.2.html
-    //https://man7.org/linux/man-pages/man3/clock_gettime.3.html
-    struct timespec start_t, end_t;
-    timespec_get(&start_t, TIME_UTC);
+    struct timespec start_t, end_t, start_cpu, end_cpu, ts1, ts2;
+    clock_gettime(CLOCK_MONOTONIC, &start_t);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_cpu);
+    timespec_get(&ts1, TIME_UTC);
 
     MFENCE
     start = __rdtscp(&ui);
@@ -210,15 +205,25 @@ int main(int argc, char *argv[]) {
             break;
     }
 
+    sleep(3);
+
     MFENCE
     end = __rdtscp(&ui);
     LFENCE
-    printf("Cycles: %llu, Returncode: %u\n", (end - start), ret);
-    timespec_get(&end_t, TIME_UTC);
+    printf("Cycles: %lu, Returncode: %u\n", (end - start), ret);
+    clock_gettime(CLOCK_MONOTONIC, &end_t);
+    clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_cpu);
+    timespec_get(&ts2, TIME_UTC);
 
-    time_start = (start_t.tv_nsec / million);
-    time_end = (end_t.tv_nsec / million);
-    printf("Time: %f ms\n", time_end - time_start);
+
+    //conversion from nano to microseconds
+    printf("Time: %lu μs\n", end_t.tv_nsec / THOUSAND - start_t.tv_nsec / THOUSAND);
+    printf("Time: %f s\n", (end_t.tv_sec - start_t.tv_sec) + (end_t.tv_nsec - start_t.tv_nsec)/1000000000.0);
+    printf("Timespec: %ld s\n", ts2.tv_nsec / THOUSAND - ts1.tv_nsec/THOUSAND);
+    printf("Timespec: %f s\n", (ts2.tv_sec - ts1.tv_sec) + (ts2.tv_nsec - ts1.tv_nsec)/1000000000.0);
+    printf("CPU Time: %lu μs\n", end_cpu.tv_nsec / THOUSAND - start_cpu.tv_nsec / THOUSAND);
+    printf("CPU Time: %f s\n", (end_cpu.tv_sec - start_cpu.tv_sec) + (end_cpu.tv_nsec - start_cpu.tv_nsec)/1000000000.0);
+
 
     if (ret != 0) {
         return EXIT_FAILURE;
