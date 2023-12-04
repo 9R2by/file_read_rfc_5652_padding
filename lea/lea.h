@@ -37,9 +37,12 @@
 #define rotateLeftBy9(x) _rotl(x, 9)
 #define rotateRightBy5(x) _rotr(x, 5)
 #define rotateRightBy3(x) _rotr(x, 3)
+#define rotateRightBy9(x) _rotr(x, 9)
+#define rotateLeftBy5(x) _rotl(x, 5)
+#define rotateLeftBy3(x) _rotl(x, 3)
 #define endian_conversion(x) __asm__ volatile ("bswap %0" : "+r" (x))
 
-void lea_encryption(uint8_t buffer[16]);
-void lea_decryption(uint8_t buffer[16]);
+void lea_encrypt(uint8_t buffer[16]);
+void lea_decrypt(uint8_t buffer[16]);
 
 #endif //LEA_H

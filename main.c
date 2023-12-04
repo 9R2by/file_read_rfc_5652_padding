@@ -6,14 +6,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdint.h>
 #include <x86intrin.h>
 #include <time.h>
-#include <unistd.h>
 #include "lea/lea.h"
 
-#define THOUSAND 1000
-#define MILLION 1000000
 #define endian_conversion(x) __asm__ volatile ("bswap %0" : "+r" (x))
 
 #define MFENCE _mm_mfence();
@@ -23,8 +19,7 @@
 static uint8_t read_file_remove_padding(char *input_p, char *output_p, uint8_t mode) {
     uint64_t fileSize;
     FILE *input, *output;
-    uint32_t a0, a1, a2, a3;
-    uint8_t buffer[16], b0[4], b1[4], b2[4], b3[4];
+    uint8_t buffer[16];
     input = fopen(input_p, "rb");
     if (input == NULL) {
         perror("Error opening file");
@@ -42,62 +37,15 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p, uint8_t m
     printf("Filesize: %zu\n", fileSize);
 
     while (fread(buffer, 1, 16, input) > 0) {
-        memcpy(b0, buffer, 4);
-        memcpy(b1, buffer + 4, 4);
-        memcpy(b2, buffer + 8, 4);
-        memcpy(b3, buffer + 12, 4);
-
-        a0 = (b0[0] << 24) | (b0[1] << 16) | (b0[2] << 8) | b0[3];
-        a1 = (b1[0] << 24) | (b1[1] << 16) | (b1[2] << 8) | b1[3];
-        a2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
-        a3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];
-
-        //add your algorithm here
-
         if (mode == 1) {
-            lea_decryption(buffer);
+            lea_decrypt(buffer);
         }
-
-
-        b0[0] = (a0 >> 24) & 0xFF;
-        b0[1] = (a0 >> 16) & 0xFF;
-        b0[2] = (a0 >> 8) & 0xFF;
-        b0[3] = a0 & 0xFF;
-
-        b1[0] = (a1 >> 24) & 0xFF;
-        b1[1] = (a1 >> 16) & 0xFF;
-        b1[2] = (a1 >> 8) & 0xFF;
-        b1[3] = a1 & 0xFF;
-
-        b2[0] = (a2 >> 24) & 0xFF;
-        b2[1] = (a2 >> 16) & 0xFF;
-        b2[2] = (a2 >> 8) & 0xFF;
-        b2[3] = a2 & 0xFF;
-
-        b3[0] = (a3 >> 24) & 0xFF;
-        b3[1] = (a3 >> 16) & 0xFF;
-        b3[2] = (a3 >> 8) & 0xFF;
-        b3[3] = a3 & 0xFF;
-
-
-        uint8_t last_byte = a3 & 0x0000000F;
-        if (last_byte == 0x1) {
-            /* endian_conversion(a0);
-             endian_conversion(a1);
-             endian_conversion(a2);
-             endian_conversion(a3);*/
+        if (buffer[15] == 0x1) {
             fwrite(buffer, sizeof(buffer) - 0x1, 1, output);
         } else {
-            /* uint8_t arr[16];
-             memcpy(arr + 0, buffer, 4);
-             memcpy(arr + 4, buffer + 4, 4);
-             memcpy(arr + 8, buffer + 8, 4);
-             memcpy(arr + 12, buffer + 12, 4);*/
-            fwrite(buffer, 16 - last_byte, 1, output);
+            fwrite(buffer, 16 - buffer[15], 1, output);
         }
     }
-
-
     fclose(input);
     fclose(output);
 
@@ -109,8 +57,7 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p, uint8_t m
 static uint8_t read_file_add_padding(char *input_p, char *output_p, uint8_t mode) {
     FILE *input, *output;
     uint64_t fileSize;
-    uint32_t a0, a1, a2, a3;
-    uint8_t buffer[16], b0[4], b1[4], b2[4], b3[4], bytesRead;
+    uint8_t buffer[16], bytesRead;
     input = fopen(input_p, "rb");
     if (input == NULL) {
         perror("Error opening file");
@@ -129,66 +76,16 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p, uint8_t mode
     printf("Filesize: %zu\n", fileSize);
 
     while ((bytesRead = fread(buffer, 1, 15, input)) > 0) {
-        if (bytesRead < sizeof(buffer)) {
-            uint8_t missing_bytes = ((uint8_t) sizeof(buffer)) - bytesRead;
-            for (size_t i = bytesRead; i < sizeof(buffer); i++) {
-                buffer[i] = missing_bytes;
-            }
+        uint8_t missing_bytes = ((uint8_t) sizeof(buffer)) - bytesRead;
+        for (size_t i = bytesRead; i < sizeof(buffer); i++) {
+            buffer[i] = missing_bytes;
         }
-        memcpy(b0, buffer, 4);
-        memcpy(b1, buffer + 4, 4);
-        memcpy(b2, buffer + 8, 4);
-        memcpy(b3, buffer + 12, 4);
-
-        /*  a0 = (b0[0] << 24) | (b0[1] << 16) | (b0[2] << 8) | b0[3];
-          a1 = (b1[0] << 24) | (b1[1] << 16) | (b1[2] << 8) | b1[3];
-          a2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
-          a3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];*/
-
-        //add your algorithm here
 
         if (mode == 1) {
-            lea_encryption(buffer);
+            lea_encrypt(buffer);
         }
 
-
         fwrite(buffer, sizeof(buffer), 1, output);
-
-        /*     endian_conversion(a0);
-             endian_conversion(a1);
-             endian_conversion(a2);
-             endian_conversion(a3);
-
-             b0[0] = (a0 >> 24) & 0xFF;
-             b0[1] = (a0 >> 16) & 0xFF;
-             b0[2] = (a0 >> 8) & 0xFF;
-             b0[3] = a0 & 0xFF;
-
-             b1[0] = (a1 >> 24) & 0xFF;
-             b1[1] = (a1 >> 16) & 0xFF;
-             b1[2] = (a1 >> 8) & 0xFF;
-             b1[3] = a1 & 0xFF;
-
-             b2[0] = (a2 >> 24) & 0xFF;
-             b2[1] = (a2 >> 16) & 0xFF;
-             b2[2] = (a2 >> 8) & 0xFF;
-             b2[3] = a2 & 0xFF;
-
-             b3[0] = (a3 >> 24) & 0xFF;
-             b3[1] = (a3 >> 16) & 0xFF;
-             b3[2] = (a3 >> 8) & 0xFF;
-             b3[3] = a3 & 0xFF;
-
-             uint8_t arr[16];
-             memcpy(arr + 0, buffer, 4);
-             memcpy(arr + 4, buffer + 4, 4);
-             memcpy(arr + 8, buffer + 8, 4);
-             memcpy(arr + 12, buffer + 12, 4);
-
-             fwrite(&a0, sizeof(uint32_t), 1, output);
-             fwrite(&a1, sizeof(uint32_t), 1, output);
-             fwrite(&a2, sizeof(uint32_t), 1, output);
-             fwrite(&a3, sizeof(uint32_t), 1, output);*/
     }
 
     fclose(input);
@@ -260,7 +157,7 @@ int main(int argc, char *argv[]) {
     printf("Cycles: %lu, Returncode: %u\n", (end - start), ret);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_cpu);
     clock_gettime(CLOCK_MONOTONIC, &end_t);
-    //conversion from nano to microseconds/milli
+    //conversion from nano to microseconds/milli/s
     printf("Time: %f s\n", (end_t.tv_sec - start_t.tv_sec) + (end_t.tv_nsec - start_t.tv_nsec) / 1000000000.0);
     printf("CPU Time: %f s\n",
            (end_cpu.tv_sec - start_cpu.tv_sec) + (end_cpu.tv_nsec - start_cpu.tv_nsec) / 1000000000.0);
