@@ -10,6 +10,7 @@
 #include <x86intrin.h>
 #include <time.h>
 #include <unistd.h>
+#include "lea/lea.h"
 
 #define THOUSAND 1000
 #define MILLION 1000000
@@ -19,7 +20,7 @@
 #define LFENCE _mm_lfence();
 
 
-static uint8_t read_file_remove_padding(char *input_p, char *output_p) {
+static uint8_t read_file_remove_padding(char *input_p, char *output_p, uint8_t mode) {
     uint64_t fileSize;
     FILE *input, *output;
     uint32_t a0, a1, a2, a3;
@@ -53,6 +54,9 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p) {
 
         //add your algorithm here
 
+        if (mode == 1) {
+            lea_decryption(buffer);
+        }
 
 
         b0[0] = (a0 >> 24) & 0xFF;
@@ -78,17 +82,17 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p) {
 
         uint8_t last_byte = a3 & 0x0000000F;
         if (last_byte == 0x1) {
-           /* endian_conversion(a0);
-            endian_conversion(a1);
-            endian_conversion(a2);
-            endian_conversion(a3);*/
+            /* endian_conversion(a0);
+             endian_conversion(a1);
+             endian_conversion(a2);
+             endian_conversion(a3);*/
             fwrite(buffer, sizeof(buffer) - 0x1, 1, output);
         } else {
-           /* uint8_t arr[16];
-            memcpy(arr + 0, buffer, 4);
-            memcpy(arr + 4, buffer + 4, 4);
-            memcpy(arr + 8, buffer + 8, 4);
-            memcpy(arr + 12, buffer + 12, 4);*/
+            /* uint8_t arr[16];
+             memcpy(arr + 0, buffer, 4);
+             memcpy(arr + 4, buffer + 4, 4);
+             memcpy(arr + 8, buffer + 8, 4);
+             memcpy(arr + 12, buffer + 12, 4);*/
             fwrite(buffer, 16 - last_byte, 1, output);
         }
     }
@@ -102,7 +106,7 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p) {
 }
 
 
-static uint8_t read_file_add_padding(char *input_p, char *output_p) {
+static uint8_t read_file_add_padding(char *input_p, char *output_p, uint8_t mode) {
     FILE *input, *output;
     uint64_t fileSize;
     uint32_t a0, a1, a2, a3;
@@ -136,52 +140,55 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p) {
         memcpy(b2, buffer + 8, 4);
         memcpy(b3, buffer + 12, 4);
 
-        a0 = (b0[0] << 24) | (b0[1] << 16) | (b0[2] << 8) | b0[3];
-        a1 = (b1[0] << 24) | (b1[1] << 16) | (b1[2] << 8) | b1[3];
-        a2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
-        a3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];
+        /*  a0 = (b0[0] << 24) | (b0[1] << 16) | (b0[2] << 8) | b0[3];
+          a1 = (b1[0] << 24) | (b1[1] << 16) | (b1[2] << 8) | b1[3];
+          a2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
+          a3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];*/
 
         //add your algorithm here
 
+        if (mode == 1) {
+            lea_encryption(buffer);
+        }
 
 
         fwrite(buffer, sizeof(buffer), 1, output);
 
-   /*     endian_conversion(a0);
-        endian_conversion(a1);
-        endian_conversion(a2);
-        endian_conversion(a3);
+        /*     endian_conversion(a0);
+             endian_conversion(a1);
+             endian_conversion(a2);
+             endian_conversion(a3);
 
-        b0[0] = (a0 >> 24) & 0xFF;
-        b0[1] = (a0 >> 16) & 0xFF;
-        b0[2] = (a0 >> 8) & 0xFF;
-        b0[3] = a0 & 0xFF;
+             b0[0] = (a0 >> 24) & 0xFF;
+             b0[1] = (a0 >> 16) & 0xFF;
+             b0[2] = (a0 >> 8) & 0xFF;
+             b0[3] = a0 & 0xFF;
 
-        b1[0] = (a1 >> 24) & 0xFF;
-        b1[1] = (a1 >> 16) & 0xFF;
-        b1[2] = (a1 >> 8) & 0xFF;
-        b1[3] = a1 & 0xFF;
+             b1[0] = (a1 >> 24) & 0xFF;
+             b1[1] = (a1 >> 16) & 0xFF;
+             b1[2] = (a1 >> 8) & 0xFF;
+             b1[3] = a1 & 0xFF;
 
-        b2[0] = (a2 >> 24) & 0xFF;
-        b2[1] = (a2 >> 16) & 0xFF;
-        b2[2] = (a2 >> 8) & 0xFF;
-        b2[3] = a2 & 0xFF;
+             b2[0] = (a2 >> 24) & 0xFF;
+             b2[1] = (a2 >> 16) & 0xFF;
+             b2[2] = (a2 >> 8) & 0xFF;
+             b2[3] = a2 & 0xFF;
 
-        b3[0] = (a3 >> 24) & 0xFF;
-        b3[1] = (a3 >> 16) & 0xFF;
-        b3[2] = (a3 >> 8) & 0xFF;
-        b3[3] = a3 & 0xFF;
+             b3[0] = (a3 >> 24) & 0xFF;
+             b3[1] = (a3 >> 16) & 0xFF;
+             b3[2] = (a3 >> 8) & 0xFF;
+             b3[3] = a3 & 0xFF;
 
-        uint8_t arr[16];
-        memcpy(arr + 0, buffer, 4);
-        memcpy(arr + 4, buffer + 4, 4);
-        memcpy(arr + 8, buffer + 8, 4);
-        memcpy(arr + 12, buffer + 12, 4);
+             uint8_t arr[16];
+             memcpy(arr + 0, buffer, 4);
+             memcpy(arr + 4, buffer + 4, 4);
+             memcpy(arr + 8, buffer + 8, 4);
+             memcpy(arr + 12, buffer + 12, 4);
 
-        fwrite(&a0, sizeof(uint32_t), 1, output);
-        fwrite(&a1, sizeof(uint32_t), 1, output);
-        fwrite(&a2, sizeof(uint32_t), 1, output);
-        fwrite(&a3, sizeof(uint32_t), 1, output);*/
+             fwrite(&a0, sizeof(uint32_t), 1, output);
+             fwrite(&a1, sizeof(uint32_t), 1, output);
+             fwrite(&a2, sizeof(uint32_t), 1, output);
+             fwrite(&a3, sizeof(uint32_t), 1, output);*/
     }
 
     fclose(input);
@@ -196,8 +203,10 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p) {
  * File input reading with padding defined in RFC5652
  * as: trailing to end:
  * 1024 bytes = 1kibibyte
- * e.g. ./main 253B 253B.out -a
- * e.g. ./main 253B.out 253B.clean -r
+ * e.g. ./main 1GB 1GB.ap -a
+ * e.g. ./main 1GB.ap 1GB.np -r
+ * e.g. ./main 1GB 1GB.ap -ea
+ * e.g. ./main 1GB.ap 1GB.np -dr
  * @param argc input arguments count
  * @param argv input shall define in and output filename as well as the mode of operation
  * @return
@@ -209,6 +218,10 @@ int main(int argc, char *argv[]) {
         mode = 1;
     } else if (strcmp(argv[3], "-r") == 0) {
         mode = 2;
+    } else if (strcmp(argv[3], "-ea") == 0) {
+        mode = 3;
+    } else if (strcmp(argv[3], "-dr") == 0) {
+        mode = 4;
     } else {
         printf("Program input is not as needed.\n");
         return EXIT_FAILURE;
@@ -226,10 +239,16 @@ int main(int argc, char *argv[]) {
 
     switch (mode) {
         case 1:
-            ret = read_file_add_padding(argv[1], argv[2]);
+            ret = read_file_add_padding(argv[1], argv[2], 0);
             break;
         case 2:
-            ret = read_file_remove_padding(argv[1], argv[2]);
+            ret = read_file_remove_padding(argv[1], argv[2], 0);
+            break;
+        case 3:
+            ret = read_file_add_padding(argv[1], argv[2], 1);
+            break;
+        case 4:
+            ret = read_file_remove_padding(argv[1], argv[2], 1);
             break;
         default:
             break;
