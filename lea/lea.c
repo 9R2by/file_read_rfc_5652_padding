@@ -21,9 +21,6 @@ void lea_encrypt(uint8_t buffer[16]) {
     x2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
     x3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];
 
-
-    //printf("Before encryption: %X %X %X %X\n", x0, x1, x2, x3);
-
     endian_conversion(x0);
     endian_conversion(x1);
     endian_conversion(x2);
@@ -209,14 +206,6 @@ void lea_encrypt(uint8_t buffer[16]) {
     endian_conversion(x2);
     endian_conversion(x3);
 
-    /*  printf("After encryption: %X %X %X %X\n", x0, x1, x2, x3);
-
-      //endian converted by memcpy
-      printf("Buffer:\n");
-      for (int i = 0; i < 16; i++) {
-          printf("%02X", buffer[i]);
-      }
-      printf("\n");*/
 }
 
 
@@ -235,8 +224,6 @@ void lea_decrypt(uint8_t buffer[16]) {
     x2 = (b2[0] << 24) | (b2[1] << 16) | (b2[2] << 8) | b2[3];
     x3 = (b3[0] << 24) | (b3[1] << 16) | (b3[2] << 8) | b3[3];
 
-
-    //printf("Before decryption. %X %X %X %X\n", x0, x1, x2, x3);
     endian_conversion(x0);
     endian_conversion(x1);
     endian_conversion(x2);
@@ -398,13 +385,4 @@ void lea_decrypt(uint8_t buffer[16]) {
     endian_conversion(x2);
     endian_conversion(x3);
 
-    /*printf("After decryption. %X %X %X %X\n", x0, x1, x2, x3);
-
-
-    //endian converted by memcpy
-    printf("Buffer:\n");
-    for (int i = 0; i < 16; i++) {
-        printf("%02X", buffer[i]);
-    }
-    printf("\n");*/
 }
