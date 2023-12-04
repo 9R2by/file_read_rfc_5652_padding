@@ -159,9 +159,9 @@ int main(int argc, char *argv[]) {
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &end_cpu);
     clock_gettime(CLOCK_MONOTONIC, &end_t);
     //conversion from nano to microseconds/milli/s
-    printf("Time: %f s\n", (end_t.tv_sec - start_t.tv_sec) + (end_t.tv_nsec - start_t.tv_nsec) / 1000000000.0);
+    printf("Time: %f s\n", (double)(end_t.tv_sec - start_t.tv_sec) + (double)(end_t.tv_nsec - start_t.tv_nsec) / 1000000000.0);
     printf("CPU Time: %f s\n",
-           (end_cpu.tv_sec - start_cpu.tv_sec) + (end_cpu.tv_nsec - start_cpu.tv_nsec) / 1000000000.0);
+           (double)(end_cpu.tv_sec - start_cpu.tv_sec) + (double)(end_cpu.tv_nsec - start_cpu.tv_nsec) / 1000000000.0);
 
 
     if (ret != 0) {
