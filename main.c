@@ -30,11 +30,11 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p, uint8_t m
         perror("Error opening file");
         return EXIT_FAILURE;
     }
-    fseek(input, 0, SEEK_END);
+    /*fseek(input, 0, SEEK_END);
     fileSize = ftell(input);
     fseek(input, 0, SEEK_SET);
 
-    printf("Filesize: %zu\n", fileSize);
+    printf("Filesize: %zu\n", fileSize);*/
 
     while (fread(buffer, 1, 16, input) > 0) {
         if (mode == 1) {
@@ -49,7 +49,7 @@ static uint8_t read_file_remove_padding(char *input_p, char *output_p, uint8_t m
     fclose(input);
     fclose(output);
 
-    printf("Output filename:  %s\n", output_p);
+    //printf("Output filename:  %s\n", output_p);
     return EXIT_SUCCESS;
 }
 
@@ -69,11 +69,12 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p, uint8_t mode
         return EXIT_FAILURE;
     }
 
+    /*
     fseek(input, 0, SEEK_END);
     fileSize = ftell(input);
     fseek(input, 0, SEEK_SET);
 
-    printf("Filesize: %zu\n", fileSize);
+    printf("Filesize: %zu\n", fileSize);*/
 
     while ((bytesRead = fread(buffer, 1, 15, input)) > 0) {
         uint8_t missing_bytes = ((uint8_t) sizeof(buffer)) - bytesRead;
@@ -91,7 +92,7 @@ static uint8_t read_file_add_padding(char *input_p, char *output_p, uint8_t mode
     fclose(input);
     fclose(output);
 
-    printf("Output filename:  %s\n", output_p);
+    //printf("Output filename:  %s\n", output_p);
     return EXIT_SUCCESS;
 }
 
@@ -126,7 +127,7 @@ int main(int argc, char *argv[]) {
 
     uint64_t start, end;
     uint32_t ui, ret = 0;
-    struct timespec start_t, end_t, start_cpu, end_cpu, ts1, ts2;
+    struct timespec start_t, end_t, start_cpu, end_cpu;
     clock_gettime(CLOCK_MONOTONIC, &start_t);
     clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start_cpu);
 
